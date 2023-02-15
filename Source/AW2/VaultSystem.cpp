@@ -102,6 +102,7 @@ void UVaultSystem::StartVault()
 				case VaultDepth::CantToThick:
 				{
 					ABLOG(Warning, TEXT("Low And TooThick You Have to Climb"));
+					SetEndLocation(VaultDepthState);
 				}
 				break;
 			}
@@ -129,20 +130,24 @@ void UVaultSystem::StartVault()
 				case VaultDepth::Thin1:
 				{
 					ABLOG(Warning, TEXT("High And Thin1"));
+					SetEndLocation(VaultDepthState);
 				}
 				break;
 				case VaultDepth::Thin2:
 				{
 					ABLOG(Warning, TEXT("High And Thin2"));
+					SetEndLocation(VaultDepthState);
 				}
 				break;
 				case VaultDepth::Thick:
 				{
 					ABLOG(Warning, TEXT("High And Thick"));
+					SetEndLocation(VaultDepthState);
 				}
 				case VaultDepth::CantToThick:
 				{
 					ABLOG(Warning, TEXT("High And TooThick You Have to Climb"));
+					SetEndLocation(VaultDepthState);
 				}
 				break;
 			}
@@ -178,7 +183,7 @@ void UVaultSystem::EndVault()
 
 bool UVaultSystem::Check()
 {
-	if (VaultHeightState == VaultHeight::Cant || VaultDepthState == VaultDepth::Cant || StartLocation == FVector::ZeroVector || LoopLocation == FVector::ZeroVector || EndLocation == FVector::ZeroVector) return false;
+	if (FinalState == FinalVaultState::None) return false;
 	return true;
 }
 
@@ -257,6 +262,8 @@ int32 UVaultSystem::CalVaultObjectDepth()
 
 	int32	LastIndex = 0;
 
+	TArray<FVector> Locations;
+
 	// 안 맞을 때까지 반복함.
 	for (int32 i = 0; i <= 10; ++i)
 	{
@@ -298,10 +305,12 @@ int32 UVaultSystem::CalVaultObjectDepth()
 				ABLOG(Warning, TEXT("Too Thick! Can't Vault!"));
 				return 8;
 			}
-
-			LoopLocation2 = HitResult.Location;
-			LoopLocation = LoopLocation2;
-			LastIndex = i;
+			else
+			{
+				LoopLocation = HitResult.Location;
+				Locations.Add(HitResult.Location);
+				LastIndex = i;
+			}
 
 			DrawDebugLine
 			(
@@ -318,14 +327,34 @@ int32 UVaultSystem::CalVaultObjectDepth()
 	ABLOG(Warning, TEXT("LastIndex : %d"), LastIndex);
 	ABLOG(Warning, TEXT("You Can Vault!"));
 
+	if (LastIndex == 2)
+	{
+		Middle1Location = Locations[1];
+	}
+	else if (LastIndex == 3)
+	{
+		Middle1Location = Locations[1];
+		Middle2Location = Locations[2];
+	}
+
 	DrawDebugSphere
 	(
-		GetWorld(), StartLocation2, 10.f, 12, FColor::Yellow, false, 5.f, 2, 1.f
+		GetWorld(), StartLocation, 10.f, 12, FColor::Yellow, false, 5.f, 2, 1.f
 	);
 
 	DrawDebugSphere
 	(
-		GetWorld(), LoopLocation2, 10.f, 12, FColor::Cyan, false, 5.f, 2, 1.f
+		GetWorld(), Middle1Location, 10.f, 12, FColor::Red, false, 5.f, 2, 1.f
+	);
+
+	DrawDebugSphere
+	(
+		GetWorld(), Middle2Location, 10.f, 12, FColor::Silver, false, 5.f, 2, 1.f
+	);
+
+	DrawDebugSphere
+	(
+		GetWorld(), LoopLocation, 10.f, 12, FColor::Cyan, false, 5.f, 2, 1.f
 	);
 
 	return LastIndex;
@@ -339,17 +368,14 @@ UVaultSystem::VaultDepth UVaultSystem::GetVaultObjectDpeth(int32 LastIndex)
 	}
 	else if (LastIndex >= 0 && LastIndex <= 1)
 	{
-		// Thin1
 		return VaultDepth::Thin1;
 	}
 	else if (LastIndex >= 2 && LastIndex <= 3)
 	{
-		// Thin2
 		return VaultDepth::Thin2;
 	}
 	else if (LastIndex >= 4 && LastIndex <= 7)
 	{
-		// Thick
 		return VaultDepth::Thick;
 	}
 	else
@@ -362,6 +388,11 @@ void UVaultSystem::SetEndLocation(VaultDepth VaultDepthState2)
 {
 	switch (VaultHeightState)
 	{
+		case VaultHeight::Cant:
+		{
+			FinalState = FinalVaultState::None;
+		}
+		break;
 		case VaultHeight::Low:
 		{
 			switch (VaultDepthState2)
@@ -395,6 +426,42 @@ void UVaultSystem::SetEndLocation(VaultDepth VaultDepthState2)
 					FinalState = FinalVaultState::None;
 				}
 				break;
+			}
+		}
+		break;
+		case VaultHeight::High:
+		{
+			switch (VaultDepthState2)
+			{
+			case VaultDepth::Thin1:
+			{
+				CalLowVaultEndLocation(0);
+				FinalState = FinalVaultState::HighThin1;
+			}
+			break;
+			case VaultDepth::Thin2:
+			{
+				CalLowVaultEndLocation(1);
+				FinalState = FinalVaultState::HighThin2;
+			}
+			break;
+			case VaultDepth::Thick:
+			{
+				CalLowVaultEndLocation(2);
+				FinalState = FinalVaultState::HighThick;
+			}
+			break;
+			case VaultDepth::CantToThick:
+			{
+				CalLowVaultCantToThickEndLocation();
+				FinalState = FinalVaultState::HighCantToThick;
+			}
+			break;
+			case VaultDepth::Cant:
+			{
+				FinalState = FinalVaultState::None;
+			}
+			break;
 			}
 		}
 		break;
@@ -447,7 +514,6 @@ void UVaultSystem::CalLowVaultEndLocation(int32 Value)
 			GetWorld(), Start, End, DrawColor, false, 3.f, 2, 1.f
 		);
 	}
-	
 }
 
 void UVaultSystem::CalLowVaultCantToThickEndLocation()

@@ -199,10 +199,9 @@ void AMyCharacter::Jump()
 
 void AMyCharacter::Vault()
 {
-	ABLOG(Warning, TEXT("Start Vault in MyCharacater!"));
-	
 	if (IsVaulting == false)
 	{
+		ABLOG(Warning, TEXT("Start Vault in MyCharacater!"));
 		IsVaulting = true;
 		ValutPressed.ExecuteIfBound(true);
 	}

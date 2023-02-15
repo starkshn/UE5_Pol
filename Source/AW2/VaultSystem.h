@@ -16,6 +16,7 @@ enum class FinalVaultState : uint8
 	HighThin1		UMETA(DisplayName = "HighThin1"),
 	HighThin2		UMETA(DisplayName = "HighThin2"),
 	HighThick		UMETA(DisplayName = "HighThick"),
+	HighCantToThick UMETA(DisplayName = "HighCantToThick"),
 	None			UMETA(DisplayName = "None"),
 };
 
@@ -73,11 +74,18 @@ public:
 	void ResetVault();
 	
 public:
+	// Start -> M1 -> M2 -> Loop -> End
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character, Meta = (AllowPrivateAccess = true))
 	class AMyCharacter* MyCharacterRef;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = VaultLocation, Meta = (AllowPrivateAccess = true))
 	FVector StartLocation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = VaultLocation, Meta = (AllowPrivateAccess = true))
+	FVector Middle1Location;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = VaultLocation, Meta = (AllowPrivateAccess = true))
+	FVector Middle2Location;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = VaultLocation, Meta = (AllowPrivateAccess = true))
 	FVector LoopLocation;
